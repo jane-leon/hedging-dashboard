@@ -421,7 +421,7 @@ npm test
 ```
 
 ## Contributing
-
+NEVER EVER PUSH ENVIRONMENT FILES OR VIRTUAL ENVIRONMENTS!!!!!!!!!!!!!!
 1. Create a feature branch from main
 2. Make your changes following the style guidelines
 3. Write tests for new functionality
