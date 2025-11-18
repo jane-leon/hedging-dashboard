@@ -1,5 +1,4 @@
 -- Hedging Dashboard Database Schema
--- Run this in Supabase SQL Editor after creating your project
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
