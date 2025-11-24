@@ -111,3 +111,69 @@ def print_collar_results(results):
     
 #    print_collar_results(results)
 #    results['chart'].show()
+
+def futures_contract_dashboard(current_price,futures_price,contract_size):
+    """
+    Interactive dashboard for analyzing futures contract P&L
+    """
+    
+    # Calculate breakeven
+    breakeven = futures_price
+    
+    # Calculate P&L per dollar move
+    pl_per_dollar = contract_size
+    
+    # Generate spot price range for payoff chart
+    price_range = np.linspace(current_price * 0.5, current_price * 1.5, 100)
+    
+    # Calculate P&L for each spot price
+    # P&L = (Spot - Futures Price) × Contract Size
+    pl_values = (price_range - futures_price) * contract_size
+    
+    # Display results
+    print("\n=== RESULTS ===")
+    print(f"Breakeven Price: ${breakeven:.2f}")
+    print(f"P&L per $1 move: ${pl_per_dollar:.2f}")
+    print(f"\nFor each $1 move in the asset, you gain/lose ${pl_per_dollar:.2f}")
+    
+    # Calculate max gain/loss at extreme prices
+    max_price = current_price * 1.5
+    min_price = current_price * 0.5
+    max_gain = (max_price - futures_price) * contract_size
+    max_loss = (min_price - futures_price) * contract_size
+    
+    print(f"\nAt spot price ${max_price:.2f}: P&L = ${max_gain:.2f}")
+    print(f"At spot price ${min_price:.2f}: P&L = ${max_loss:.2f}")
+    
+    # Create payoff chart
+    plt.figure(figsize=(10, 6))
+    plt.plot(price_range, pl_values, linewidth=2, color='blue', label='P&L')
+    plt.axhline(y=0, color='black', linestyle='--', linewidth=0.8)
+    plt.axvline(x=futures_price, color='red', linestyle='--', linewidth=0.8, 
+                label=f'Breakeven (${futures_price:.2f})')
+    plt.axvline(x=current_price, color='green', linestyle=':', linewidth=0.8, 
+                label=f'Current Price (${current_price:.2f})')
+    
+    plt.xlabel('Spot Price ($)', fontsize=12)
+    plt.ylabel('Profit/Loss ($)', fontsize=12)
+    plt.title('Futures Contract Payoff Diagram', fontsize=14, fontweight='bold')
+    plt.grid(True, alpha=0.3)
+    plt.legend()
+    
+    # Add annotations
+    plt.annotate(f'Breakeven: ${breakeven:.2f}', 
+                xy=(futures_price, 0), 
+                xytext=(futures_price, max(pl_values)*0.3),
+                arrowprops=dict(arrowstyle='->', color='red'),
+                fontsize=10)
+    
+    plt.tight_layout()
+    plt.show()
+    
+    return {
+        'current_price': current_price,
+        'futures_price': futures_price,
+        'contract_size': contract_size,
+        'breakeven': breakeven,
+        'pl_per_dollar': pl_per_dollar
+    }
