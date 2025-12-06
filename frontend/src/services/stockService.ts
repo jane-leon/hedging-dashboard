@@ -9,6 +9,7 @@ export interface StockSearchResult {
   current_price: number
   market_cap: number
   exchange: string
+  logo_url: string
 }
 
 export interface StockDetails {
@@ -22,6 +23,7 @@ export interface StockDetails {
   volume: number
   avg_volume: number
   beta: number
+  logo_url: string
   pe_ratio: number
   eps: number
   dividend_yield: number

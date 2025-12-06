@@ -12,6 +12,7 @@ export interface PortfolioHolding {
   totalValue: number
   gainLoss: number
   gainLossPercent: number
+  logo_url: string
 }
 
 export interface PortfolioStats {

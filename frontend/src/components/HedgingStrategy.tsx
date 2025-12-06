@@ -59,8 +59,8 @@ export function HedgingStrategy() {
   const maxGain = Math.max(...payoffData.map(d => d.payoff))
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
-      <Card>
+    <div className="grid grid-cols-1 xl:grid-cols-5 gap-6 p-6">
+      <Card className="xl:col-span-2">
         <CardHeader>
           <CardTitle>Hedging Strategy</CardTitle>
         </CardHeader>
@@ -158,13 +158,13 @@ export function HedgingStrategy() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="xl:col-span-3">
         <CardHeader>
           <CardTitle>Payoff Chart</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-80 w-full mb-6" style={{ minHeight: '320px', minWidth: '100%' }}>
-            <ResponsiveContainer width="100%" height="100%" minHeight={320}>
+          <div className="h-80 w-full mb-6">
+            <ResponsiveContainer width="100%" height={320}>
               <LineChart data={payoffData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 

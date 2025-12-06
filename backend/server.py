@@ -16,9 +16,30 @@ import yfinance as yf
 import pandas as pd
 from supabase import create_client, Client
 from dotenv import load_dotenv
+import urllib.parse
 
 # Load environment variables
 load_dotenv()
+
+
+def get_logo_url(symbol: str, website: str = '') -> str:
+    """Generate logo URL for a company using multiple fallback methods."""
+    # Method 1: Use Clearbit Logo API based on website domain
+    if website:
+        try:
+            # Extract domain from website URL
+            from urllib.parse import urlparse
+            domain = urlparse(website).netloc.lower()
+            if domain:
+                # Remove www. prefix
+                domain = domain.replace('www.', '')
+                # Use Clearbit Logo API
+                return f'https://logo.clearbit.com/{domain}'
+        except Exception:
+            pass
+    
+    # Method 2: Use Logo.dev service as fallback
+    return f'https://img.logo.dev/ticker/{symbol.upper()}?token=pk_X-1ZO13ESRuPTKu6CLLPrA'
 
 
 def load_ticker_symbols() -> List[str]:
@@ -122,7 +143,8 @@ def create_app() -> Flask:
                             'current_price': info.get('currentPrice', 
                                                     info.get('regularMarketPrice', 0)),
                             'market_cap': info.get('marketCap', 0),
-                            'exchange': info.get('exchange', 'Unknown')
+                            'exchange': info.get('exchange', 'Unknown'),
+                            'logo_url': get_logo_url(ticker, info.get('website', ''))
                         }
                         results.append(result)
                 except Exception as ticker_error:
@@ -166,6 +188,7 @@ def create_app() -> Flask:
                 'volume': info.get('volume', 0),
                 'avg_volume': info.get('averageVolume', 0),
                 'beta': info.get('beta', 0),
+                'logo_url': get_logo_url(ticker, info.get('website', '')),
                 'pe_ratio': info.get('forwardPE', info.get('trailingPE', 0)),
                 'eps': info.get('forwardEps', info.get('trailingEps', 0)),
                 'dividend_yield': info.get('dividendYield', 0),
@@ -267,7 +290,8 @@ def create_app() -> Flask:
                         'current_price': current_price,
                         'previous_close': previous_close,
                         'change': round(change, 2),
-                        'change_percent': round(change_percent, 2)
+                        'change_percent': round(change_percent, 2),
+                        'logo_url': get_logo_url(ticker, info.get('website', ''))
                     }
                     
             return jsonify({'stocks': results})
@@ -352,7 +376,8 @@ def create_app() -> Flask:
                         'currentPrice': current_price,
                         'totalValue': total_value_holding,
                         'gainLoss': gain_loss,
-                        'gainLossPercent': gain_loss_percent
+                        'gainLossPercent': gain_loss_percent,
+                        'logo_url': get_logo_url(holding['ticker_symbol'], info.get('website', ''))
                     })
                     
                     total_value += total_value_holding
@@ -376,7 +401,8 @@ def create_app() -> Flask:
                         'currentPrice': current_price,
                         'totalValue': total_value_holding,
                         'gainLoss': gain_loss,
-                        'gainLossPercent': gain_loss_percent
+                        'gainLossPercent': gain_loss_percent,
+                        'logo_url': get_logo_url(holding['ticker_symbol'], info.get('website', ''))
                     })
                     
                     total_value += total_value_holding

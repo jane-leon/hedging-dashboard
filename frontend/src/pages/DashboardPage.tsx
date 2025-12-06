@@ -32,22 +32,32 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="container mx-auto py-8 space-y-8">
-        <h1 className="text-4xl font-bold text-center mb-8">Hedging Dashboard</h1>
-        
-        <div className="space-y-12">
-          <div>
-            <h2 className="text-2xl font-semibold mb-4">Stock Search</h2>
-            <StockSearch onPortfolioUpdate={portfolioRefresh ?? undefined} />
+      <div className="flex h-screen pt-16">
+        {/* Left Sidebar */}
+        <div className="w-80 border-r border-border bg-card/30 overflow-y-auto">
+          <div className="p-4 space-y-4">
+            {/* Compact Stock Search */}
+            <div>
+              <h3 className="text-sm font-medium mb-2 text-muted-foreground">STOCK SEARCH</h3>
+              <StockSearch onPortfolioUpdate={portfolioRefresh ?? undefined} />
+            </div>
+            
+            {/* Compact Portfolio */}
+            <div>
+              <h3 className="text-sm font-medium mb-2 text-muted-foreground">MY PORTFOLIO</h3>
+              <Portfolio onAddHolding={setPortfolioRefresh} />
+            </div>
           </div>
+        </div>
 
-          <div>
-            <h2 className="text-2xl font-semibold mb-4">My Portfolio</h2>
-            <Portfolio onAddHolding={setPortfolioRefresh} />
-          </div>
-          
-          <div>
-            <h2 className="text-2xl font-semibold mb-4">Hedging Strategies</h2>
+        {/* Main Content Area */}
+        <div className="flex-1 p-6 overflow-y-auto">
+          <div className="max-w-6xl mx-auto">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold mb-2">Hedging Dashboard</h1>
+              <p className="text-sm text-muted-foreground">Analyze and visualize hedging strategies</p>
+            </div>
+            
             <HedgingStrategy />
           </div>
         </div>

@@ -158,144 +158,117 @@ export function Portfolio({ onAddHolding }: { onAddHolding?: (loadPortfolio: () 
   }
 
   return (
-    <div className="space-y-6">
-      {/* Portfolio Summary */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Portfolio Overview</CardTitle>
-            <CardDescription>
-              {holdings.filter(h => h.symbol && h.symbol.trim()).length} {holdings.filter(h => h.symbol && h.symbol.trim()).length === 1 ? 'holding' : 'holdings'}
-            </CardDescription>
+    <div className="space-y-3">
+      {/* Compact Portfolio Summary */}
+      <Card className="border-0 shadow-sm">
+        <CardContent className="p-3">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-xs font-medium text-muted-foreground">
+              {holdings.filter(h => h.symbol && h.symbol.trim()).length} Holdings
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={refreshPrices}
+              disabled={refreshing || holdings.filter(h => h.symbol && h.symbol.trim()).length === 0}
+              className="h-6 w-6 p-0"
+            >
+              <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={refreshPrices}
-            disabled={refreshing || holdings.filter(h => h.symbol && h.symbol.trim()).length === 0}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <div className="text-sm text-muted-foreground">Total Value</div>
-              <div className="text-2xl font-bold">
+          
+          <div className="space-y-2 text-xs">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Total Value</span>
+              <span className="font-semibold">
                 {StockService.formatPrice(stats.totalValue || 0)}
-              </div>
+              </span>
             </div>
-            <div>
-              <div className="text-sm text-muted-foreground">Total Invested</div>
-              <div className="text-xl font-semibold">
-                {StockService.formatPrice(stats.totalInvested || 0)}
-              </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Gain/Loss</span>
+              <span className={`font-semibold ${
+                (stats.totalGainLoss || 0) === 0 ? 'text-muted-foreground' :
+                (stats.totalGainLoss || 0) > 0 ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {(stats.totalGainLoss || 0) === 0 ? '$0.00' : 
+                 ((stats.totalGainLoss || 0) >= 0 ? '+' : '') + 
+                 StockService.formatPrice(Math.abs(stats.totalGainLoss || 0))}
+              </span>
             </div>
-            <div>
-              <div className="text-sm text-muted-foreground">Total Gain/Loss</div>
-              {(stats.totalGainLoss || 0) === 0 ? (
-                <div className="text-xl font-semibold text-muted-foreground">
-                  $0.00
-                </div>
-              ) : (
-                <div className={`text-xl font-semibold flex items-center gap-1 ${
-                  (stats.totalGainLoss || 0) > 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {(stats.totalGainLoss || 0) > 0 ? (
-                    <TrendingUp className="h-4 w-4" />
-                  ) : (
-                    <TrendingDown className="h-4 w-4" />
-                  )}
-                  {StockService.formatPrice(Math.abs(stats.totalGainLoss || 0))}
-                </div>
-              )}
-            </div>
-            <div>
-              <div className="text-sm text-muted-foreground">Return %</div>
-              <div className={`text-xl font-semibold ${
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Return %</span>
+              <span className={`font-semibold ${
                 (stats.totalGainLossPercent || 0) === 0 ? 'text-muted-foreground' : 
                 (stats.totalGainLossPercent || 0) > 0 ? 'text-green-600' : 'text-red-600'
               }`}>
-                {(stats.totalGainLossPercent || 0) === 0 ? '0.00%' : StockService.formatPercent(stats.totalGainLossPercent || 0)}
-              </div>
+                {(stats.totalGainLossPercent || 0) === 0 ? '0.00%' : 
+                 StockService.formatPercent(stats.totalGainLossPercent || 0)}
+              </span>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {error && (
-        <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-md p-3">
+        <div className="text-red-600 text-xs bg-red-50 border border-red-200 rounded p-2">
           {error}
         </div>
       )}
 
-      {/* Holdings List */}
+      {/* Compact Holdings List */}
       {holdings.filter(h => h.symbol && h.symbol.trim()).length > 0 ? (
-        <div className="space-y-3">
+        <div className="space-y-2 max-h-96 overflow-y-auto">
           {holdings.filter(h => h.symbol && h.symbol.trim()).map((holding) => (
-            <Card key={holding.id}>
-              <CardContent className="p-4">
+            <Card key={holding.id} className="border-0 shadow-sm">
+              <CardContent className="p-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <div>
-                        <div className="font-semibold text-lg">{holding.symbol}</div>
-                        <div className="text-sm text-muted-foreground">{holding.name}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {holding.logo_url && (
+                          <img
+                            src={holding.logo_url}
+                            alt={`${holding.symbol} logo`}
+                            className="w-4 h-4 rounded-sm object-contain flex-shrink-0"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                            }}
+                          />
+                        )}
+                        <div>
+                          <div className="font-semibold text-sm">{holding.symbol}</div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {holding.quantity} shares
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-4 gap-8 flex-1 text-right">
-                    <div>
-                      <div className="text-xs text-muted-foreground">Shares</div>
-                      <div className="font-semibold">{holding.quantity}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-muted-foreground">Avg Price</div>
-                      <div className="font-semibold">
-                        {StockService.formatPrice(holding.averagePrice || 0)}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-muted-foreground">Current Price</div>
-                      <div className="font-semibold">
-                        {StockService.formatPrice(holding.currentPrice || 0)}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-muted-foreground">Total Value</div>
-                      <div className="font-bold text-lg">
-                        {StockService.formatPrice(holding.totalValue || 0)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <div className={`font-semibold ${
-                        (holding.gainLoss || 0) === 0 ? 'text-muted-foreground' :
-                        (holding.gainLoss || 0) > 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {(holding.gainLoss || 0) === 0 ? '$0.00' : 
-                         ((holding.gainLoss || 0) >= 0 ? '+' : '') + StockService.formatPrice(Math.abs(holding.gainLoss || 0))}
-                      </div>
-                      <div className={`text-sm ${
-                        (holding.gainLossPercent || 0) === 0 ? 'text-muted-foreground' :
-                        (holding.gainLossPercent || 0) > 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {(holding.gainLossPercent || 0) === 0 ? '0.00%' : StockService.formatPercent(holding.gainLossPercent || 0)}
-                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeHolding(holding.id)}
+                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
                     
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeHolding(holding.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex justify-between items-center mt-1">
+                      <div className="text-xs text-muted-foreground">
+                        {StockService.formatPrice(holding.currentPrice || 0)}
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs font-semibold">
+                          {StockService.formatPrice(holding.totalValue || 0)}
+                        </div>
+                        <div className={`text-xs ${
+                          (holding.gainLoss || 0) === 0 ? 'text-muted-foreground' :
+                          (holding.gainLoss || 0) > 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {(holding.gainLossPercent || 0) === 0 ? '0.00%' : 
+                           StockService.formatPercent(holding.gainLossPercent || 0)}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -303,11 +276,11 @@ export function Portfolio({ onAddHolding }: { onAddHolding?: (loadPortfolio: () 
           ))}
         </div>
       ) : (
-        <Card>
-          <CardContent className="text-center py-8">
-            <div className="text-muted-foreground">
-              <div className="mb-2">No stocks in your portfolio yet</div>
-              <div className="text-sm">Search for stocks above and add them to get started!</div>
+        <Card className="border-0 shadow-sm">
+          <CardContent className="text-center py-4">
+            <div className="text-muted-foreground text-xs">
+              <div className="mb-1">No stocks yet</div>
+              <div>Search above to get started</div>
             </div>
           </CardContent>
         </Card>

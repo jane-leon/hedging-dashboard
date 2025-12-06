@@ -164,8 +164,10 @@ export function StockSearch({ onPortfolioUpdate }: { onPortfolioUpdate?: () => v
       setDollarAmount('')
       setError('')
       
-      // Notify parent component to refresh portfolio
-      onPortfolioUpdate?.()
+      // Notify parent component to refresh portfolio after successful addition
+      setTimeout(() => {
+        onPortfolioUpdate?.()
+      }, 100)
     } catch (err) {
       console.error('Error adding stock to portfolio:', err)
       setError('Failed to add stock to portfolio')
@@ -183,146 +185,115 @@ export function StockSearch({ onPortfolioUpdate }: { onPortfolioUpdate?: () => v
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Stock Search</CardTitle>
-          <CardDescription>
-            Search for stocks to add to your portfolio
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2 relative">
-            <div className="flex-1 relative">
-              <Input
-                placeholder="Start typing a stock ticker (e.g., A, AAPL, MSFT)"
-                value={query}
-                onChange={handleInputChange}
-                onKeyPress={handleKeyPress}
-                className="flex-1"
-                onFocus={() => setShowSuggestions(searchResults.length > 0)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-              />
-              
-              {/* Dynamic search suggestions dropdown */}
-              {showSuggestions && searchResults.length > 0 && (
-                <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
-                  {searchResults.map((result) => (
-                    <div
-                      key={result.symbol}
-                      className="p-2 cursor-pointer hover:bg-muted transition-colors border-b last:border-b-0"
-                      onClick={() => handleSelectStock(result)}
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <div className="font-semibold text-sm">{result.symbol}</div>
-                          {result.name && (
-                            <div className="text-xs text-muted-foreground truncate">{result.name}</div>
-                          )}
-                        </div>
-                        {result.current_price && (
-                          <div className="text-sm font-medium">
-                            {StockService.formatPrice(result.current_price)}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            <Button onClick={handleSearch} disabled={loading}>
-              {loading ? (
-                'Searching...'
-              ) : (
-                <>
-                  <Search className="h-4 w-4 mr-2" />
-                  Search
-                </>
-              )}
-            </Button>
-          </div>
-
-          {error && (
-            <div className="text-red-600 text-sm">{error}</div>
-          )}
-
-          {!showSuggestions && searchResults.length > 0 && !selectedStock && (
-            <div className="space-y-2">
-              <h3 className="font-semibold">Search Results:</h3>
-              {searchResults.map((result) => (
-                <div
-                  key={result.symbol}
-                  className="p-3 border rounded-lg cursor-pointer hover:bg-muted transition-colors"
-                  onClick={() => handleSelectStock(result)}
-                >
-                  <div className="flex justify-between items-start">
+    <div className="space-y-3">
+      {/* Compact Search Input */}
+      <div className="relative">
+        <Input
+          placeholder="Search stocks..."
+          value={query}
+          onChange={handleInputChange}
+          onKeyPress={handleKeyPress}
+          className="text-sm"
+          onFocus={() => setShowSuggestions(searchResults.length > 0)}
+          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+        />
+        
+        {/* Dynamic search suggestions dropdown */}
+        {showSuggestions && searchResults.length > 0 && (
+          <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-auto">
+            {searchResults.map((result) => (
+              <div
+                key={result.symbol}
+                className="p-2 cursor-pointer hover:bg-muted transition-colors border-b last:border-b-0"
+                onClick={() => handleSelectStock(result)}
+              >
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    {result.logo_url && (
+                      <img
+                        src={result.logo_url}
+                        alt={`${result.symbol} logo`}
+                        className="w-4 h-4 rounded-sm object-contain flex-shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                        }}
+                      />
+                    )}
                     <div>
-                      <div className="font-semibold">{result.symbol}</div>
+                      <div className="font-semibold text-xs">{result.symbol}</div>
                       {result.name && (
-                        <div className="text-sm text-muted-foreground">{result.name}</div>
-                      )}
-                      {result.sector && (
-                        <div className="text-xs text-muted-foreground">{result.sector}</div>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      {result.current_price && (
-                        <div className="font-semibold">
-                          {StockService.formatPrice(result.current_price)}
-                        </div>
-                      )}
-                      {result.market_cap && (
-                        <div className="text-xs text-muted-foreground">
-                          {StockService.formatMarketCap(result.market_cap)}
-                        </div>
+                        <div className="text-xs text-muted-foreground truncate">{result.name}</div>
                       )}
                     </div>
                   </div>
+                  {result.current_price && (
+                    <div className="text-xs font-medium">
+                      {StockService.formatPrice(result.current_price)}
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
+      {error && (
+        <div className="text-red-600 text-xs bg-red-50 border border-red-200 rounded p-2">
+          {error}
+        </div>
+      )}
+
+      {/* Compact Selected Stock Card */}
       {selectedStock && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                {selectedStock.symbol} - {selectedStock.name}
-                {selectedStock.current_price > selectedStock.previous_close ? (
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                ) : (
-                  <TrendingDown className="h-4 w-4 text-red-600" />
+                {selectedStock.logo_url && (
+                  <img
+                    src={selectedStock.logo_url}
+                    alt={`${selectedStock.symbol} logo`}
+                    className="w-5 h-5 rounded-sm object-contain flex-shrink-0"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
                 )}
+                <div>
+                  <div className="font-semibold text-sm flex items-center gap-1">
+                    {selectedStock.symbol}
+                    {selectedStock.current_price > selectedStock.previous_close ? (
+                      <TrendingUp className="h-3 w-3 text-green-600" />
+                    ) : (
+                      <TrendingDown className="h-3 w-3 text-red-600" />
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {selectedStock.name}
+                  </div>
+                </div>
               </div>
               <Button
                 onClick={() => handleAddToPortfolio(selectedStock)}
                 size="sm"
-                className="flex items-center gap-2"
+                className="h-6 text-xs px-2"
               >
-                <Plus className="h-4 w-4" />
-                Add to Portfolio
+                <Plus className="h-3 w-3 mr-1" />
+                Add
               </Button>
-            </CardTitle>
-            <CardDescription>
-              {selectedStock.sector} • {selectedStock.exchange}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <div className="text-sm text-muted-foreground">Current Price</div>
-                <div className="text-2xl font-bold">
+            </div>
+            
+            <div className="space-y-1 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Price</span>
+                <span className="font-semibold">
                   {StockService.formatPrice(selectedStock.current_price)}
-                </div>
+                </span>
               </div>
-              <div>
-                <div className="text-sm text-muted-foreground">Change</div>
-                <div className={`text-lg font-semibold ${
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Change</span>
+                <span className={`font-semibold ${
                   selectedStock.current_price > selectedStock.previous_close 
                     ? 'text-green-600' 
                     : 'text-red-600'
@@ -330,43 +301,13 @@ export function StockSearch({ onPortfolioUpdate }: { onPortfolioUpdate?: () => v
                   {StockService.formatPercent(
                     ((selectedStock.current_price - selectedStock.previous_close) / selectedStock.previous_close) * 100
                   )}
-                </div>
+                </span>
               </div>
-              <div>
-                <div className="text-sm text-muted-foreground">Market Cap</div>
-                <div className="text-lg font-semibold">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Market Cap</span>
+                <span className="font-semibold">
                   {StockService.formatMarketCap(selectedStock.market_cap)}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground">P/E Ratio</div>
-                <div className="text-lg font-semibold">
-                  {selectedStock.pe_ratio ? selectedStock.pe_ratio.toFixed(2) : 'N/A'}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground">Beta</div>
-                <div className="text-lg font-semibold">
-                  {selectedStock.beta ? selectedStock.beta.toFixed(2) : 'N/A'}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground">52W High</div>
-                <div className="text-lg font-semibold">
-                  {StockService.formatPrice(selectedStock.week_52_high)}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground">52W Low</div>
-                <div className="text-lg font-semibold">
-                  {StockService.formatPrice(selectedStock.week_52_low)}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground">Volume</div>
-                <div className="text-lg font-semibold">
-                  {selectedStock.volume.toLocaleString()}
-                </div>
+                </span>
               </div>
             </div>
           </CardContent>
