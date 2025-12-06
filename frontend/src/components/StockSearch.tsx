@@ -40,7 +40,7 @@ export function StockSearch({ onPortfolioUpdate }: { onPortfolioUpdate?: () => v
 
       setLoading(true)
       setError('')
-      
+
       try {
         const results = await StockService.searchStock(searchQuery)
         setSearchResults(results)
@@ -72,7 +72,7 @@ export function StockSearch({ onPortfolioUpdate }: { onPortfolioUpdate?: () => v
     setLoading(true)
     setError('')
     setShowSuggestions(false)
-    
+
     try {
       const results = await StockService.searchStock(query)
       setSearchResults(results)
@@ -89,7 +89,7 @@ export function StockSearch({ onPortfolioUpdate }: { onPortfolioUpdate?: () => v
     setShowSuggestions(false)
     setLoading(true)
     setError('')
-    
+
     try {
       const details = await StockService.getStockDetails(result.symbol)
       setSelectedStock(details)
@@ -156,14 +156,14 @@ export function StockSearch({ onPortfolioUpdate }: { onPortfolioUpdate?: () => v
       }
 
       await PortfolioService.addHolding(request)
-      
+
       // Reset state
       setShowAddDialog(false)
       setStockToAdd(null)
       setQuantity('')
       setDollarAmount('')
       setError('')
-      
+
       // Notify parent component to refresh portfolio after successful addition
       setTimeout(() => {
         onPortfolioUpdate?.()
@@ -197,7 +197,7 @@ export function StockSearch({ onPortfolioUpdate }: { onPortfolioUpdate?: () => v
           onFocus={() => setShowSuggestions(searchResults.length > 0)}
           onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
         />
-        
+
         {/* Dynamic search suggestions dropdown */}
         {showSuggestions && searchResults.length > 0 && (
           <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-auto">
@@ -248,8 +248,8 @@ export function StockSearch({ onPortfolioUpdate }: { onPortfolioUpdate?: () => v
       {selectedStock && (
         <Card className="border-0 shadow-sm">
           <CardContent className="p-3">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
                 {selectedStock.logo_url && (
                   <img
                     src={selectedStock.logo_url}
@@ -260,16 +260,16 @@ export function StockSearch({ onPortfolioUpdate }: { onPortfolioUpdate?: () => v
                     }}
                   />
                 )}
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="font-semibold text-sm flex items-center gap-1">
                     {selectedStock.symbol}
                     {selectedStock.current_price > selectedStock.previous_close ? (
-                      <TrendingUp className="h-3 w-3 text-green-600" />
+                      <TrendingUp className="h-3 w-3 text-green-600 flex-shrink-0" />
                     ) : (
-                      <TrendingDown className="h-3 w-3 text-red-600" />
+                      <TrendingDown className="h-3 w-3 text-red-600 flex-shrink-0" />
                     )}
                   </div>
-                  <div className="text-xs text-muted-foreground truncate">
+                  <div className="text-xs text-muted-foreground truncate max-w-[200px]">
                     {selectedStock.name}
                   </div>
                 </div>
@@ -277,13 +277,13 @@ export function StockSearch({ onPortfolioUpdate }: { onPortfolioUpdate?: () => v
               <Button
                 onClick={() => handleAddToPortfolio(selectedStock)}
                 size="sm"
-                className="h-6 text-xs px-2"
+                className="h-6 w-6 p-0 flex-shrink-0 ml-2"
+                title="Add to portfolio"
               >
-                <Plus className="h-3 w-3 mr-1" />
-                Add
+                <Plus className="h-4 w-4" />
               </Button>
             </div>
-            
+
             <div className="space-y-1 text-xs">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Price</span>
@@ -293,11 +293,10 @@ export function StockSearch({ onPortfolioUpdate }: { onPortfolioUpdate?: () => v
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Change</span>
-                <span className={`font-semibold ${
-                  selectedStock.current_price > selectedStock.previous_close 
-                    ? 'text-green-600' 
+                <span className={`font-semibold ${selectedStock.current_price > selectedStock.previous_close
+                    ? 'text-green-600'
                     : 'text-red-600'
-                }`}>
+                  }`}>
                   {StockService.formatPercent(
                     ((selectedStock.current_price - selectedStock.previous_close) / selectedStock.previous_close) * 100
                   )}
@@ -305,7 +304,7 @@ export function StockSearch({ onPortfolioUpdate }: { onPortfolioUpdate?: () => v
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Market Cap</span>
-                <span className="font-semibold">
+                <span className="font-semibold text-xs">
                   {StockService.formatMarketCap(selectedStock.market_cap)}
                 </span>
               </div>
@@ -382,7 +381,7 @@ export function StockSearch({ onPortfolioUpdate }: { onPortfolioUpdate?: () => v
                   />
                 </div>
               )}
-              
+
               {/* Preview calculation */}
               {purchaseType === 'shares' && quantity && !isNaN(parseFloat(quantity)) && (
                 <div className="p-3 bg-muted rounded-lg">
@@ -392,7 +391,7 @@ export function StockSearch({ onPortfolioUpdate }: { onPortfolioUpdate?: () => v
                   </div>
                 </div>
               )}
-              
+
               {purchaseType === 'dollars' && dollarAmount && !isNaN(parseFloat(dollarAmount)) && (
                 <div className="p-3 bg-muted rounded-lg">
                   <div className="text-sm text-muted-foreground">Shares to Purchase</div>
@@ -405,19 +404,19 @@ export function StockSearch({ onPortfolioUpdate }: { onPortfolioUpdate?: () => v
               {error && (
                 <div className="text-red-600 text-sm">{error}</div>
               )}
-              
+
               <div className="flex gap-2 justify-end">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={cancelAddToPortfolio}
                   disabled={addingToPortfolio}
                 >
                   Cancel
                 </Button>
-                <Button 
+                <Button
                   onClick={confirmAddToPortfolio}
                   disabled={
-                    addingToPortfolio || 
+                    addingToPortfolio ||
                     (purchaseType === 'shares' && (!quantity || parseFloat(quantity) <= 0)) ||
                     (purchaseType === 'dollars' && (!dollarAmount || parseFloat(dollarAmount) <= 0))
                   }

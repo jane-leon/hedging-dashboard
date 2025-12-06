@@ -1,0 +1,162 @@
+/* RiskBot Container */
+.riskbot-container {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.5s ease-in-out;
+}
+
+.riskbot {
+    transition: opacity 0.5s ease-in-out;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+/* Bounce animation for euphoric */
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+.riskbot-euphoric {
+    animation: bounce 1s ease-in-out infinite;
+}
+
+/* Breathing animation for healthy */
+@keyframes breathe {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.riskbot-healthy {
+    animation: breathe 2s ease-in-out infinite;
+}
+
+/* Shake animation for nervous */
+@keyframes shake-nervous {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-3px);
+    }
+
+    75% {
+        transform: translateX(3px);
+    }
+}
+
+.riskbot-nervous {
+    animation: shake-nervous 0.5s ease-in-out infinite;
+}
+
+/* Violent shake for stressed */
+@keyframes shake-stressed {
+
+    0%,
+    100% {
+        transform: translate(0, 0);
+    }
+
+    25% {
+        transform: translate(-5px, -5px);
+    }
+
+    50% {
+        transform: translate(5px, 5px);
+    }
+
+    75% {
+        transform: translate(-5px, 5px);
+    }
+}
+
+.riskbot-stressed {
+    animation: shake-stressed 0.3s ease-in-out infinite;
+}
+
+/* Fade in/out for critical */
+@keyframes fade-critical {
+
+    0%,
+    100% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+.riskbot-critical {
+    animation: fade-critical 1.5s ease-in-out infinite;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+    @keyframes bounce {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+
+    @keyframes shake-nervous {
+
+        0%,
+        100% {
+            transform: translateX(0);
+        }
+
+        25% {
+            transform: translateX(-2px);
+        }
+
+        75% {
+            transform: translateX(2px);
+        }
+    }
+
+    @keyframes shake-stressed {
+
+        0%,
+        100% {
+            transform: translate(0, 0);
+        }
+
+        25% {
+            transform: translate(-3px, -3px);
+        }
+
+        50% {
+            transform: translate(3px, 3px);
+        }
+
+        75% {
+            transform: translate(-3px, 3px);
+        }
+    }
+}

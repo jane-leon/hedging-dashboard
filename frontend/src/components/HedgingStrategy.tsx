@@ -1,25 +1,66 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { Slider } from './ui/slider'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts'
+import { type PortfolioHolding } from '../services/portfolioService'
+import portfolioService from '../services/portfolioService'
 
-export function HedgingStrategy() {
+export function HedgingStrategy({ selectedStock }: { selectedStock: PortfolioHolding | null }) {
   const [strategy, setStrategy] = useState('collar')
   const [currentPrice, setCurrentPrice] = useState([100])
   const [putStrike, setPutStrike] = useState([95])
   const [callStrike, setCallStrike] = useState([110])
   const [putPremium, setPutPremium] = useState('10')
   const [callPremium, setCallPremium] = useState('10')
+  const [volatility, setVolatility] = useState<number | null>(null)
+  const [loadingVolatility, setLoadingVolatility] = useState(false)
+
+  // Update current price and strike prices when stock is selected
+  useEffect(() => {
+    if (selectedStock) {
+      const price = selectedStock.currentPrice || 100
+      setCurrentPrice([price])
+
+      // Auto-calculate intelligent strike prices based on current price
+      // Put strike: ~5-10% out of the money (below current price)
+      const putStrikePrice = Math.round(price * 0.92) // 8% below
+      setPutStrike([putStrikePrice])
+
+      // Call strike: ~5-10% out of the money (above current price)  
+      const callStrikePrice = Math.round(price * 1.08) // 8% above
+      setCallStrike([callStrikePrice])
+
+      // Fetch historical volatility
+      setLoadingVolatility(true)
+      portfolioService.getStockVolatility(selectedStock.symbol, 30)
+        .then(data => {
+          setVolatility(data.volatility)
+          setLoadingVolatility(false)
+        })
+        .catch(error => {
+          console.error('Failed to fetch volatility:', error)
+          setVolatility(null)
+          setLoadingVolatility(false)
+        })
+    } else {
+      setVolatility(null)
+    }
+  }, [selectedStock])
 
   const generatePayoffData = () => {
     const data = []
-    for (let price = 85; price <= 120; price += 1) {
+    const basePrice = currentPrice[0]
+    const minPrice = Math.max(1, basePrice * 0.7) // 30% below current price
+    const maxPrice = basePrice * 1.3 // 30% above current price
+    const step = (maxPrice - minPrice) / 50 // 50 data points
+
+    for (let price = minPrice; price <= maxPrice; price += step) {
       let payoff = 0
       const stockGain = price - currentPrice[0]
-      
+
       if (strategy === 'collar') {
         const putPayoff = Math.max(putStrike[0] - price, 0) - parseFloat(putPremium)
         const callPayoff = -Math.max(price - callStrike[0], 0) + parseFloat(callPremium)
@@ -32,9 +73,9 @@ export function HedgingStrategy() {
         const shortPutPayoff = -Math.max(callStrike[0] - price, 0) + parseFloat(callPremium)
         payoff = longPutPayoff + shortPutPayoff
       }
-      
+
       data.push({
-        price,
+        price: Math.round(price * 100) / 100,
         payoff: Math.round(payoff * 100) / 100
       })
     }
@@ -42,7 +83,7 @@ export function HedgingStrategy() {
   }
 
   const payoffData = generatePayoffData()
-  
+
   const getBreakeven = () => {
     if (strategy === 'collar') {
       return currentPrice[0] + parseFloat(callPremium) - parseFloat(putPremium)
@@ -53,7 +94,7 @@ export function HedgingStrategy() {
     }
     return currentPrice[0]
   }
-  
+
   const breakeven = getBreakeven()
   const maxLoss = Math.min(...payoffData.map(d => d.payoff))
   const maxGain = Math.max(...payoffData.map(d => d.payoff))
@@ -65,9 +106,60 @@ export function HedgingStrategy() {
           <CardTitle>Hedging Strategy</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Selected Stock Display */}
+          {selectedStock ? (
+            <div className="p-3 bg-muted rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                {selectedStock.logo_url && (
+                  <img
+                    src={selectedStock.logo_url}
+                    alt={`${selectedStock.symbol} logo`}
+                    className="w-5 h-5 rounded-sm object-contain"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                )}
+                <div>
+                  <div className="font-semibold text-sm">{selectedStock.symbol}</div>
+                  <div className="text-xs text-muted-foreground">{selectedStock.name}</div>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Current Price: </span>
+                  <span className="font-semibold">${selectedStock.currentPrice?.toFixed(2)}</span>
+                </div>
+                {loadingVolatility ? (
+                  <div className="text-xs text-muted-foreground">Loading volatility...</div>
+                ) : volatility !== null ? (
+                  <div className="text-xs flex items-center gap-1">
+                    <span className="text-muted-foreground">Volatility:</span>
+                    <span
+                      className={
+                        volatility < 20
+                          ? "font-semibold text-green-600"
+                          : volatility < 40
+                            ? "font-semibold text-yellow-600"
+                            : "font-semibold text-red-600"
+                      }
+                    >
+                      {volatility.toFixed(1)}%
+                    </span>
+                    <span className="text-muted-foreground text-[10px]">(30d)</span>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ) : (
+            <div className="p-3 bg-muted rounded-lg text-center text-sm text-muted-foreground">
+              Select a stock from your portfolio to analyze hedging strategies
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>Strategy</Label>
-            <Select value={strategy} onValueChange={setStrategy}>
+            <Select value={strategy} onValueChange={setStrategy} disabled={!selectedStock}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -80,20 +172,6 @@ export function HedgingStrategy() {
           </div>
 
           <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <Label>Current stock price</Label>
-                <span className="font-medium">${currentPrice[0]}</span>
-              </div>
-              <Slider
-                value={currentPrice}
-                onValueChange={setCurrentPrice}
-                max={150}
-                min={50}
-                step={1}
-                className="w-full"
-              />
-            </div>
 
             <div className="space-y-2">
               <div className="flex justify-between">
@@ -104,9 +182,10 @@ export function HedgingStrategy() {
                 value={putStrike}
                 onValueChange={setPutStrike}
                 max={currentPrice[0] - 5}
-                min={50}
+                min={Math.max(1, currentPrice[0] * 0.5)}
                 step={1}
                 className="w-full"
+                disabled={!selectedStock}
               />
             </div>
 
@@ -119,10 +198,11 @@ export function HedgingStrategy() {
                 <Slider
                   value={callStrike}
                   onValueChange={setCallStrike}
-                  max={150}
+                  max={currentPrice[0] * 1.5}
                   min={strategy === 'bear_put_spread' ? putStrike[0] + 5 : currentPrice[0] + 5}
                   step={1}
                   className="w-full"
+                  disabled={!selectedStock}
                 />
               </div>
             )}
@@ -139,6 +219,7 @@ export function HedgingStrategy() {
                   value={callPremium}
                   onChange={(e) => setCallPremium(e.target.value)}
                   placeholder="$10"
+                  disabled={!selectedStock}
                 />
               </div>
             )}
@@ -151,6 +232,7 @@ export function HedgingStrategy() {
                 value={putPremium}
                 onChange={(e) => setPutPremium(e.target.value)}
                 placeholder="$10"
+                disabled={!selectedStock}
               />
             </div>
             {strategy === 'protective_put' && <div></div>}
@@ -167,17 +249,17 @@ export function HedgingStrategy() {
             <ResponsiveContainer width="100%" height={320}>
               <LineChart data={payoffData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="price" 
+                <XAxis
+                  dataKey="price"
                   label={{ value: 'Future Stock Price', position: 'insideBottom', offset: -5 }}
                 />
-                <YAxis 
+                <YAxis
                   label={{ value: 'Net Profit/Loss', angle: -90, position: 'insideLeft' }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="payoff" 
-                  stroke="#3b82f6" 
+                <Line
+                  type="monotone"
+                  dataKey="payoff"
+                  stroke="#3b82f6"
                   strokeWidth={2}
                   dot={false}
                 />

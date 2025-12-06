@@ -104,6 +104,22 @@ class PortfolioService {
 
     return await response.json()
   }
+
+  async getStockVolatility(symbol: string, period: number = 30): Promise<{
+    symbol: string
+    volatility: number
+    period_days: number
+    timestamp: string
+  }> {
+    const response = await fetch(`${API_BASE_URL}/api/stock/${symbol}/volatility?period=${period}`)
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || `Failed to fetch volatility: ${response.statusText}`)
+    }
+
+    return await response.json()
+  }
 }
 
 export default new PortfolioService()

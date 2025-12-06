@@ -4,9 +4,16 @@ import { Button } from './ui/button'
 import StockService from '../services/stockService'
 import PortfolioService, { type PortfolioHolding, type PortfolioStats, type AddHoldingRequest } from '../services/portfolioService'
 import { TrendingUp, TrendingDown, RefreshCw, Trash2 } from 'lucide-react'
+import { RiskBot } from './RiskBot'
 
 
-export function Portfolio({ onAddHolding }: { onAddHolding?: (loadPortfolio: () => void) => void }) {
+export function Portfolio({
+  onAddHolding,
+  onSelectStock
+}: {
+  onAddHolding?: (loadPortfolio: () => void) => void
+  onSelectStock?: (stock: PortfolioHolding) => void
+}) {
   const [holdings, setHoldings] = useState<PortfolioHolding[]>([])
   const [stats, setStats] = useState<PortfolioStats>({
     totalValue: 0,
@@ -17,15 +24,21 @@ export function Portfolio({ onAddHolding }: { onAddHolding?: (loadPortfolio: () 
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
+  const [portfolioVolatility, setPortfolioVolatility] = useState<number | null>(null)
 
   const loadPortfolio = useCallback(async () => {
     setLoading(true)
     setError('')
-    
+
     try {
       const portfolioData = await PortfolioService.getPortfolio()
       setHoldings(portfolioData.holdings)
       setStats(portfolioData.stats)
+
+      // Fetch volatility for all holdings in background
+      if (portfolioData.holdings && portfolioData.holdings.length > 0) {
+        calculatePortfolioVolatility(portfolioData.holdings)
+      }
     } catch (err) {
       console.error('Error loading portfolio:', err)
       setError(err instanceof Error ? err.message : 'Failed to load portfolio')
@@ -42,6 +55,44 @@ export function Portfolio({ onAddHolding }: { onAddHolding?: (loadPortfolio: () 
     }
   }, [])
 
+  const calculatePortfolioVolatility = async (holdings: PortfolioHolding[]) => {
+    try {
+      // Fetch volatility for each holding
+      const volatilityPromises = holdings.map(async (holding) => {
+        try {
+          const data = await PortfolioService.getStockVolatility(holding.symbol, 30)
+          return {
+            symbol: holding.symbol,
+            volatility: data.volatility,
+            weight: holding.totalValue
+          }
+        } catch (error) {
+          console.warn(`Failed to fetch volatility for ${holding.symbol}:`, error)
+          return null
+        }
+      })
+
+      const results = await Promise.all(volatilityPromises)
+      const validResults = results.filter(r => r !== null) as Array<{ symbol: string; volatility: number; weight: number }>
+
+      if (validResults.length === 0) {
+        setPortfolioVolatility(null)
+        return
+      }
+
+      // Calculate weighted average volatility
+      const totalWeight = validResults.reduce((sum, r) => sum + r.weight, 0)
+      const weightedVol = validResults.reduce((sum, r) => {
+        return sum + (r.volatility * r.weight / totalWeight)
+      }, 0)
+
+      setPortfolioVolatility(weightedVol)
+    } catch (error) {
+      console.error('Error calculating portfolio volatility:', error)
+      setPortfolioVolatility(null)
+    }
+  }
+
   useEffect(() => {
     // Force clean slate on component mount
     setHoldings([])
@@ -57,7 +108,7 @@ export function Portfolio({ onAddHolding }: { onAddHolding?: (loadPortfolio: () 
   const refreshPrices = async () => {
     setRefreshing(true)
     setError('')
-    
+
     try {
       // Reload portfolio data from server to get updated prices
       const portfolioData = await PortfolioService.getPortfolio()
@@ -159,52 +210,73 @@ export function Portfolio({ onAddHolding }: { onAddHolding?: (loadPortfolio: () 
 
   return (
     <div className="space-y-3">
-      {/* Compact Portfolio Summary */}
+      {/* Compact Portfolio Summary with RiskBot */}
       <Card className="border-0 shadow-sm">
         <CardContent className="p-3">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-xs font-medium text-muted-foreground">
-              {holdings.filter(h => h.symbol && h.symbol.trim()).length} Holdings
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-xs font-medium text-muted-foreground">
+                  {holdings.filter(h => h.symbol && h.symbol.trim()).length} Holdings
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={refreshPrices}
+                  disabled={refreshing || holdings.filter(h => h.symbol && h.symbol.trim()).length === 0}
+                  className="h-6 w-6 p-0"
+                >
+                  <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total Value</span>
+                  <span className="font-semibold">
+                    {StockService.formatPrice(stats.totalValue || 0)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Gain/Loss</span>
+                  <span className={`font-semibold ${(stats.totalGainLoss || 0) === 0 ? 'text-muted-foreground' :
+                    (stats.totalGainLoss || 0) > 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                    {(stats.totalGainLoss || 0) === 0 ? '$0.00' :
+                      ((stats.totalGainLoss || 0) >= 0 ? '+' : '') +
+                      StockService.formatPrice(Math.abs(stats.totalGainLoss || 0))}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Return %</span>
+                  <span className={`font-semibold ${(stats.totalGainLossPercent || 0) === 0 ? 'text-muted-foreground' :
+                      (stats.totalGainLossPercent || 0) > 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                    {(stats.totalGainLossPercent || 0) === 0 ? '0.00%' :
+                      StockService.formatPercent(stats.totalGainLossPercent || 0)}
+                  </span>
+                </div>
+                {/* Portfolio Volatility */}
+                {portfolioVolatility !== null && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Volatility</span>
+                    <span className={`font-semibold ${portfolioVolatility < 20 ? 'text-green-600' :
+                        portfolioVolatility < 45 ? 'text-yellow-600' :
+                          'text-red-600'
+                      }`}>
+                      {portfolioVolatility.toFixed(1)}%
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={refreshPrices}
-              disabled={refreshing || holdings.filter(h => h.symbol && h.symbol.trim()).length === 0}
-              className="h-6 w-6 p-0"
-            >
-              <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
-            </Button>
-          </div>
-          
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Total Value</span>
-              <span className="font-semibold">
-                {StockService.formatPrice(stats.totalValue || 0)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Gain/Loss</span>
-              <span className={`font-semibold ${
-                (stats.totalGainLoss || 0) === 0 ? 'text-muted-foreground' :
-                (stats.totalGainLoss || 0) > 0 ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {(stats.totalGainLoss || 0) === 0 ? '$0.00' : 
-                 ((stats.totalGainLoss || 0) >= 0 ? '+' : '') + 
-                 StockService.formatPrice(Math.abs(stats.totalGainLoss || 0))}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Return %</span>
-              <span className={`font-semibold ${
-                (stats.totalGainLossPercent || 0) === 0 ? 'text-muted-foreground' : 
-                (stats.totalGainLossPercent || 0) > 0 ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {(stats.totalGainLossPercent || 0) === 0 ? '0.00%' : 
-                 StockService.formatPercent(stats.totalGainLossPercent || 0)}
-              </span>
-            </div>
+
+            {/* RiskBot */}
+            {holdings.filter(h => h.symbol && h.symbol.trim()).length > 0 && (
+              <div className="ml-3 flex-shrink-0">
+                <RiskBot volatility={portfolioVolatility} size="md" showMessage={false} />
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -219,7 +291,11 @@ export function Portfolio({ onAddHolding }: { onAddHolding?: (loadPortfolio: () 
       {holdings.filter(h => h.symbol && h.symbol.trim()).length > 0 ? (
         <div className="space-y-2 max-h-96 overflow-y-auto">
           {holdings.filter(h => h.symbol && h.symbol.trim()).map((holding) => (
-            <Card key={holding.id} className="border-0 shadow-sm">
+            <Card
+              key={holding.id}
+              className="border-0 shadow-sm cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => onSelectStock?.(holding)}
+            >
               <CardContent className="p-2">
                 <div className="flex items-center justify-between">
                   <div className="min-w-0 flex-1">
@@ -245,13 +321,16 @@ export function Portfolio({ onAddHolding }: { onAddHolding?: (loadPortfolio: () 
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => removeHolding(holding.id)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          removeHolding(holding.id)
+                        }}
                         className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
-                    
+
                     <div className="flex justify-between items-center mt-1">
                       <div className="text-xs text-muted-foreground">
                         {StockService.formatPrice(holding.currentPrice || 0)}
@@ -260,12 +339,11 @@ export function Portfolio({ onAddHolding }: { onAddHolding?: (loadPortfolio: () 
                         <div className="text-xs font-semibold">
                           {StockService.formatPrice(holding.totalValue || 0)}
                         </div>
-                        <div className={`text-xs ${
-                          (holding.gainLoss || 0) === 0 ? 'text-muted-foreground' :
+                        <div className={`text-xs ${(holding.gainLoss || 0) === 0 ? 'text-muted-foreground' :
                           (holding.gainLoss || 0) > 0 ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {(holding.gainLossPercent || 0) === 0 ? '0.00%' : 
-                           StockService.formatPercent(holding.gainLossPercent || 0)}
+                          }`}>
+                          {(holding.gainLossPercent || 0) === 0 ? '0.00%' :
+                            StockService.formatPercent(holding.gainLossPercent || 0)}
                         </div>
                       </div>
                     </div>

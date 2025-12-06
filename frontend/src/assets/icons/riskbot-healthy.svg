@@ -1,0 +1,55 @@
+<svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .pixel { shape-rendering: crispEdges; }
+    </style>
+  </defs>
+  
+  <!-- Background (transparent) -->
+  <rect width="256" height="256" fill="none"/>
+  
+  <!-- 16x16 pixel grid, scaled up 16x = 256x256 -->
+  <g transform="scale(16)">
+    <!-- Antenna -->
+    <rect x="7" y="0" width="2" height="1" class="pixel" fill="#C41E3A"/>
+    <rect x="7" y="1" width="2" height="1" class="pixel" fill="#000000"/>
+    <rect x="6" y="2" width="4" height="1" class="pixel" fill="#10b981"/>
+    
+    <!-- Head outline -->
+    <rect x="4" y="3" width="8" height="1" class="pixel" fill="#000000"/>
+    <rect x="3" y="4" width="1" height="8" class="pixel" fill="#000000"/>
+    <rect x="12" y="4" width="1" height="8" class="pixel" fill="#000000"/>
+    <rect x="4" y="12" width="8" height="1" class="pixel" fill="#000000"/>
+    
+    <!-- Face fill -->
+    <rect x="4" y="4" width="8" height="8" class="pixel" fill="#C41E3A"/>
+    
+    <!-- Happy eyes -->
+    <rect x="5" y="6" width="2" height="1" class="pixel" fill="#000000"/>
+    <rect x="9" y="6" width="2" height="1" class="pixel" fill="#000000"/>
+    <rect x="5" y="7" width="2" height="1" class="pixel" fill="#FFFFFF"/>
+    <rect x="9" y="7" width="2" height="1" class="pixel" fill="#FFFFFF"/>
+    
+    <!-- Gentle smile -->
+    <rect x="6" y="10" width="4" height="1" class="pixel" fill="#000000"/>
+    <rect x="5" y="9" width="1" height="1" class="pixel" fill="#000000"/>
+    <rect x="10" y="9" width="1" height="1" class="pixel" fill="#000000"/>
+    
+    <!-- Arms relaxed at sides -->
+    <rect x="2" y="8" width="1" height="3" class="pixel" fill="#000000"/>
+    <rect x="13" y="8" width="1" height="3" class="pixel" fill="#000000"/>
+    
+    <!-- Body -->
+    <rect x="5" y="13" width="6" height="1" class="pixel" fill="#000000"/>
+    <rect x="5" y="14" width="6" height="2" class="pixel" fill="#C41E3A"/>
+    
+    <!-- Circuit pattern on body -->
+    <rect x="6" y="14" width="1" height="1" class="pixel" fill="#FFFFFF"/>
+    <rect x="8" y="15" width="1" height="1" class="pixel" fill="#FFFFFF"/>
+    <rect x="9" y="14" width="1" height="1" class="pixel" fill="#FFFFFF"/>
+    
+    <!-- Feet -->
+    <rect x="5" y="16" width="2" height="1" class="pixel" fill="#000000"/>
+    <rect x="9" y="16" width="2" height="1" class="pixel" fill="#000000"/>
+  </g>
+</svg>

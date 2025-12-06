@@ -59,6 +59,69 @@ def load_ticker_symbols() -> List[str]:
 
 ALL_TICKERS = load_ticker_symbols()
 
+
+
+def calculate_historical_volatility(ticker: str, period_days: int = 30) -> Dict[str, Any]:
+    """Calculate annualized historical volatility for a stock.
+    
+    Args:
+        ticker: Stock ticker symbol.
+        period_days: Number of days to use for calculation (default: 30).
+        
+    Returns:
+        Dictionary containing volatility percentage, period, and timestamp.
+        
+    Raises:
+        ValueError: If insufficient data or calculation fails.
+    """
+    try:
+        stock = yf.Ticker(ticker.upper())
+        
+        # Map period_days to yfinance period formats
+        # Fetch more data than needed to ensure we have enough
+        if period_days <= 30:
+            period = '3mo'
+        elif period_days <= 90:
+            period = '6mo'
+        else:
+            period = '1y'
+        
+        # Fetch historical data
+        hist = stock.history(period=period)
+        
+        if hist.empty or len(hist) < 2:
+            raise ValueError('Insufficient historical data')
+        
+        # Get only the last N days of data for calculation
+        hist = hist.tail(period_days + 1)
+        
+        # Calculate daily returns (percentage change)
+        daily_returns = hist['Close'].pct_change().dropna()
+        
+        if daily_returns.empty or len(daily_returns) < 2:
+            raise ValueError('Insufficient price data to calculate returns')
+        
+        # Calculate standard deviation of daily returns
+        daily_volatility = daily_returns.std()
+        
+        # Annualize the volatility (multiply by sqrt of trading days per year)
+        # Using 252 trading days per year as standard
+        import math
+        annualized_volatility = daily_volatility * math.sqrt(252)
+        
+        # Convert to percentage
+        volatility_percent = annualized_volatility * 100
+        
+        return {
+            'volatility': round(volatility_percent, 2),
+            'period_days': len(daily_returns),
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+    except Exception as error:
+        raise ValueError(f'Failed to calculate volatility: {str(error)}')
+
+
 # Supabase configuration
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_SERVICE_KEY')
@@ -249,6 +312,44 @@ def create_app() -> Flask:
             app.logger.error('Error fetching historical data for %s: %s', 
                            ticker, error)
             return jsonify({'error': 'Failed to fetch historical data'}), 500
+    
+    @app.route('/api/stock/<ticker>/volatility', methods=['GET'])
+    def get_stock_volatility(ticker: str) -> Any:
+        """Get historical volatility for a stock.
+        
+        Args:
+            ticker: Stock ticker symbol.
+            
+        Query Parameters:
+            period: Number of days for calculation (default: 30, valid: 30, 60, 90, 180).
+            
+        Returns:
+            JSON response with volatility data or error message.
+        """
+        period = request.args.get('period', '30')
+        
+        # Validate period parameter
+        valid_periods = ['30', '60', '90', '180']
+        if period not in valid_periods:
+            return jsonify({
+                'error': f'Invalid period. Must be one of: {", ".join(valid_periods)}'
+            }), 400
+        
+        try:
+            period_days = int(period)
+            volatility_data = calculate_historical_volatility(ticker.upper(), period_days)
+            
+            return jsonify({
+                'symbol': ticker.upper(),
+                **volatility_data
+            })
+            
+        except ValueError as error:
+            app.logger.warning('Volatility calculation error for %s: %s', ticker, error)
+            return jsonify({'error': str(error)}), 404
+        except Exception as error:
+            app.logger.error('Error calculating volatility for %s: %s', ticker, error)
+            return jsonify({'error': 'Failed to calculate volatility'}), 500
     
     @app.route('/api/stocks/batch', methods=['POST'])
     def get_batch_stocks() -> Any:
